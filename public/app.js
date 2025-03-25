@@ -47,8 +47,20 @@ function initPage() {
 
   const params = new URLSearchParams(window.location.search);
   const sharedScore = params.get('score');
-  if (sharedScore) alert(`A friend shared a score of ${sharedScore} seconds!`);
+  const sharedMode = params.get('mode');
 
+  // If a user visited via a share link
+  if (sharedScore && sharedMode) {
+    alert(`A friend shared a score of ${sharedScore} seconds in the ${sharedMode}s mode!`);
+    if (['10', '60', '100'].includes(sharedMode)) {
+      switchMode(sharedMode);
+    }
+  } else if (sharedScore) {
+    // If only score is in the query (older links)
+    alert(`A friend shared a score of ${sharedScore} seconds!`);
+  }
+
+  // Fetch leaderboard once at startup
   fetchLeaderboard();
 }
 
@@ -134,10 +146,13 @@ function removeFeedback() {
 }
 
 // ------------------
-// Submit Score (unchanged)
+// Submit Score
 // ------------------
 function submitScore() {
-  if (!isFinished) { alert("Finish the timer before submitting a score!"); return; }
+  if (!isFinished) {
+    alert("Finish the timer before submitting a score!");
+    return;
+  }
   let playerName = document.getElementById('player-name').value.trim() || "Anonymous";
   const finalSeconds = (stopWatch.getDuration() / 1000).toFixed(3);
 
@@ -147,8 +162,34 @@ function submitScore() {
     body: JSON.stringify({ name: playerName, mode: currentMode, score: finalSeconds })
   })
   .then(res => res.json())
-  .then(result => { if (result.success) { alert("Score submitted successfully!"); fetchLeaderboard(); showShareLink(finalSeconds); } })
+  .then(result => {
+    if (result.success) {
+      alert("Score submitted successfully!");
+      fetchLeaderboard();
+      showShareLink(finalSeconds);
+    }
+  })
   .catch(console.error);
+}
+
+// ------------------
+// Show Share Link
+// ------------------
+function showShareLink(sec) {
+  // Construct a friendly message that includes the user’s score and the mode
+  const shareMessage = `Check out this Stopwatch Game! Try to beat my score of ${sec}s in the ${currentMode}s mode: `
+    + `${window.location.origin}${window.location.pathname}?score=${sec}&mode=${currentMode}`;
+
+  const link = document.getElementById('share-link');
+  link.value = shareMessage; // Put the full text into the text field
+
+  document.getElementById('share-link-container').style.display = 'block';
+}
+
+function copyShareLink() {
+  document.getElementById('share-link').select();
+  document.execCommand('copy');
+  alert('Link copied!');
 }
 
 // ------------------
