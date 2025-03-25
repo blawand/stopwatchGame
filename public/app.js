@@ -70,14 +70,26 @@ function switchMode(mode) {
   currentMode = mode;
   resetTimerDisplay();
   document.getElementById('main-button').value = "Start";
+
+  // Remove highlight from all mode buttons
+  const buttons = document.getElementsByClassName('mode-button');
+  for (let i = 0; i < buttons.length; i++) {
+    buttons[i].classList.remove('selected-mode');
+  }
+
+  // Highlight the currently selected mode button
+  const currentButton = document.getElementById('mode-' + mode);
+  if (currentButton) {
+    currentButton.classList.add('selected-mode');
+  }
 }
 
 // ------------------
 // Main Button Click
 // ------------------
 function onMainButtonClick() {
-  if (!isCounting) {
-    // START
+  // CASE 1: If not started yet (or we previously reset) -> START
+  if (!isCounting && !isFinished) {
     clearInterval(updateInterval);
     stopWatch = new Timer();
     stopWatch.start();
@@ -85,9 +97,9 @@ function onMainButtonClick() {
     isCounting = true;
     isFinished = false;
 
-    // Hide the actual time from user: use placeholder
-    document.getElementById('seconds').innerText = "--";
-    document.getElementById('millis').innerText = "//--";
+    // Placeholder while running
+    document.getElementById('seconds').innerText = "??";
+    document.getElementById('millis').innerText = "???";
 
     // Hide leaderboard while playing
     document.getElementById('leaderboard').style.display = 'none';
@@ -98,8 +110,8 @@ function onMainButtonClick() {
     // Start update loop
     updateInterval = setInterval(updateDisplay, 50);
 
+  // CASE 2: If currently counting -> STOP
   } else if (isCounting && !isFinished) {
-    // STOP
     stopWatch.stop();
     clearInterval(updateInterval);
 
@@ -109,14 +121,14 @@ function onMainButtonClick() {
     // Reveal final time
     showFinalTime();
 
-    // Show the leaderboard
+    // Show leaderboard
     document.getElementById('leaderboard').style.display = 'block';
 
     // Switch button to RESET
     document.getElementById('main-button').value = "Reset";
 
+  // CASE 3: If finished -> RESET
   } else if (isFinished) {
-    // RESET
     resetTimerDisplay();
   }
 }

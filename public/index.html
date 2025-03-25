@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Stopwatch Game</title>
   <meta name="description" content="Multi-mode stopwatch game">
-  <!-- Google Font Example: Quicksand or you can try Poppins/Nunito/etc. -->
   <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" type="text/css" />
   <script src="app.js" defer></script>
@@ -15,16 +14,16 @@
       <h1 class="title">Stopwatch Game</h1>
       
       <div class="timer-container">
-        <!-- Display the time -->
         <div id="timetext" class="timer-display">
           <span id="seconds">00</span>.<span id="millis">000</span>
         </div>
       </div>
 
+      <!-- Mode Buttons -->
       <div class="mode-container">
-        <button class="mode-button" onclick="switchMode('10')">10s Mode</button>
-        <button class="mode-button" onclick="switchMode('60')">60s Mode</button>
-        <button class="mode-button" onclick="switchMode('100')">100s Mode</button>
+        <button class="mode-button selected-mode" id="mode-10" onclick="switchMode('10')">10s Mode</button>
+        <button class="mode-button" id="mode-60" onclick="switchMode('60')">60s Mode</button>
+        <button class="mode-button" id="mode-100" onclick="switchMode('100')">100s Mode</button>
       </div>
 
       <div class="button-container">
@@ -53,20 +52,20 @@
         <button onclick="copyShareLink()">Copy Link</button>
       </div>
 
-      <!-- Leaderboard -->
+      <!-- High Scores -->
       <div id="leaderboard" class="leaderboard" style="display: none;">
-        <h2>Leaderboard (Top 20 by % Deviation)</h2>
+        <h2>High Scores - Top 20</h2>
         <table id="leaderboard-table">
           <thead>
             <tr>
               <th>Player</th>
               <th>Mode (s)</th>
-              <th>Score (s)</th>
-              <th>Deviation (%)</th>
+              <th>Time (s)</th>
+              <th>Error (%)</th>
             </tr>
           </thead>
           <tbody>
-            <!-- Leaderboard entries injected here -->
+            <!-- Filled dynamically -->
           </tbody>
         </table>
       </div>

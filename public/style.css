@@ -15,7 +15,7 @@ body {
   color: #333;
 }
 
-/* OUTER WRAPPER for a centered card look */
+/* OUTER WRAPPER */
 .outer-wrapper {
   width: 100%;
   max-width: 1200px;
@@ -86,6 +86,13 @@ body {
 .mode-button:hover {
   background: #ff6689;
   transform: translateY(-1px);
+}
+
+/* Highlight for SELECTED MODE */
+.selected-mode {
+  background: #fd5b81 !important;
+  transform: none !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
 }
 
 /* MAIN START/STOP BUTTON */
@@ -176,7 +183,7 @@ body {
   transform: translateY(-1px);
 }
 
-/* LEADERBOARD */
+/* HIGH SCORES TABLE */
 .leaderboard {
   margin-top: 30px;
   text-align: center;
