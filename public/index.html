@@ -1,53 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Stopwatch Game (10s / 60s / 100s)</title>
+  <meta charset="UTF-8" />
+  <title>Stopwatch Game</title>
   <meta name="description" content="Multi-mode stopwatch game">
-  <link href="https://fonts.googleapis.com/css?family=Space+Mono&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" type="text/css">
+  <!-- Google Font Example: Quicksand or you can try Poppins/Nunito/etc. -->
+  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" type="text/css" />
   <script src="app.js" defer></script>
 </head>
 <body onload="initPage()">
-  <div id="horizon">
-    <div id="content">
-      <!-- Timer Display -->
-      <span id="timetext">
-        <span id="seconds">00</span>.<span id="millis">000</span>
-      </span>
-      <br>
-      <!-- Mode Selection -->
-      <div id="mode-container">
+  <div class="outer-wrapper">
+    <div class="container">
+      <h1 class="title">Stopwatch Game</h1>
+      
+      <div class="timer-container">
+        <!-- Display the time -->
+        <div id="timetext" class="timer-display">
+          <span id="seconds">00</span>.<span id="millis">000</span>
+        </div>
+      </div>
+
+      <div class="mode-container">
         <button class="mode-button" onclick="switchMode('10')">10s Mode</button>
         <button class="mode-button" onclick="switchMode('60')">60s Mode</button>
         <button class="mode-button" onclick="switchMode('100')">100s Mode</button>
       </div>
-      <!-- Main Button -->
-      <input id="main-button" class="button" name="Enter" value="Start" type="button" onclick="onMainButtonClick()">
-      <!-- Score Submission & Sharing -->
-      <div id="share-container">
-        <input type="text" id="player-name" placeholder="Enter Your Name" />
-        <button id="submit-score" onclick="submitScore()">Submit Score</button>
-        <br><br>
-        <div id="share-link-container" style="display: none;">
-          <p>Share your score!</p>
-          <input type="text" id="share-link" readonly>
-          <button onclick="copyShareLink()">Copy Link</button>
-        </div>
+
+      <div class="button-container">
+        <input
+          id="main-button"
+          class="main-button"
+          type="button"
+          value="Start"
+          onclick="onMainButtonClick()"
+        />
       </div>
+
+      <div class="score-input-container">
+        <input
+          type="text"
+          id="player-name"
+          placeholder="Enter Your Name"
+        />
+        <button id="submit-score" onclick="submitScore()">Submit Score</button>
+      </div>
+
+      <!-- Share container -->
+      <div id="share-link-container" class="share-container" style="display: none;">
+        <p>Share your score!</p>
+        <input type="text" id="share-link" readonly />
+        <button onclick="copyShareLink()">Copy Link</button>
+      </div>
+
       <!-- Leaderboard -->
-      <div id="leaderboard">
-        <h2>Leaderboard</h2>
+      <div id="leaderboard" class="leaderboard" style="display: none;">
+        <h2>Leaderboard (Top 20 by % Deviation)</h2>
         <table id="leaderboard-table">
           <thead>
             <tr>
               <th>Player</th>
               <th>Mode (s)</th>
               <th>Score (s)</th>
+              <th>Deviation (%)</th>
             </tr>
           </thead>
           <tbody>
-            <!-- Leaderboard entries will be injected here -->
+            <!-- Leaderboard entries injected here -->
           </tbody>
         </table>
       </div>

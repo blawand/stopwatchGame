@@ -1,4 +1,6 @@
-// Timer object
+// ------------------
+// Simple Timer Class
+// ------------------
 function Timer() {
   this.startTime = null;
   this.stopTime = null;
@@ -26,101 +28,167 @@ function Timer() {
   };
 }
 
-// Global variables
+// ------------------
+// Global Variables
+// ------------------
 let stopWatch = new Timer();
 let updateInterval = null;
-let currentMode = '10'; // default mode is 10 seconds
+let currentMode = '10'; // Default game mode
 let isCounting = false;
 let isFinished = false;
 
-// Initialize page
+// ------------------
+// Page Initialization
+// ------------------
 function initPage() {
+  // Only trigger spacebar if not typing
   document.body.onkeydown = function(e) {
-    if (e.keyCode === 32) { // spacebar
-      onMainButtonClick();
+    if (e.keyCode === 32) { // space
+      const activeTag = document.activeElement.tagName.toLowerCase();
+      if (activeTag !== 'input' && activeTag !== 'textarea') {
+        onMainButtonClick();
+        e.preventDefault();
+      }
     }
   };
 
-  // Check URL parameters for shared score (optional)
+  // Check URL params for shared score
   const urlParams = new URLSearchParams(window.location.search);
   const sharedScore = urlParams.get('score');
   if (sharedScore) {
-    alert("A friend has shared a score of " + sharedScore + " seconds!");
+    alert("A friend shared a score of " + sharedScore + " seconds!");
   }
 
+  // Fetch scores from server (though hidden initially)
   fetchLeaderboard();
 }
 
-// Switch modes
+// ------------------
+// Switch Mode
+// ------------------
 function switchMode(mode) {
   currentMode = mode;
   resetTimerDisplay();
   document.getElementById('main-button').value = "Start";
 }
 
-// Main button handler (Start/Stop/Reset)
+// ------------------
+// Main Button Click
+// ------------------
 function onMainButtonClick() {
   if (!isCounting) {
+    // START
     clearInterval(updateInterval);
     stopWatch = new Timer();
     stopWatch.start();
+
     isCounting = true;
     isFinished = false;
+
+    // Hide the actual time from user: use placeholder
+    document.getElementById('seconds').innerText = "--";
+    document.getElementById('millis').innerText = "//--";
+
+    // Hide leaderboard while playing
+    document.getElementById('leaderboard').style.display = 'none';
+
+    // Switch button to STOP
     document.getElementById('main-button').value = "Stop";
-    updateInterval = setInterval(updateDisplay, 10);
+
+    // Start update loop
+    updateInterval = setInterval(updateDisplay, 50);
+
   } else if (isCounting && !isFinished) {
+    // STOP
     stopWatch.stop();
     clearInterval(updateInterval);
+
     isCounting = false;
     isFinished = true;
+
+    // Reveal final time
+    showFinalTime();
+
+    // Show the leaderboard
+    document.getElementById('leaderboard').style.display = 'block';
+
+    // Switch button to RESET
     document.getElementById('main-button').value = "Reset";
-    updateDisplay();
+
   } else if (isFinished) {
+    // RESET
     resetTimerDisplay();
   }
 }
 
-function resetTimerDisplay() {
-  isCounting = false;
-  isFinished = false;
-  clearInterval(updateInterval);
-  stopWatch = new Timer();
-  document.getElementById('seconds').innerText = "00";
-  document.getElementById('millis').innerText = "000";
-  document.getElementById('main-button').value = "Start";
-}
+// Show final time on screen
+function showFinalTime() {
+  const duration = stopWatch.getDuration();
+  let s = Math.floor(duration / 1000);
+  let ms = duration % 1000;
 
-// Update timer display
-function updateDisplay() {
-  let dur = stopWatch.getDuration();
-  let s = Math.floor(dur / 1000);
-  let ms = dur % 1000;
   let secStr = s < 10 ? "0" + s : s.toString();
   let msStr = ms < 10 ? "00" + ms : ms < 100 ? "0" + ms : ms.toString();
 
   document.getElementById('seconds').innerText = secStr;
   document.getElementById('millis').innerText = msStr;
-
-  if (s >= parseInt(currentMode)) {
-    stopWatch.stop();
-    clearInterval(updateInterval);
-    isCounting = false;
-    isFinished = true;
-    document.getElementById('main-button').value = "Reset";
-  }
 }
 
-// Submit score to the server
+// ------------------
+// Reset Timer
+// ------------------
+function resetTimerDisplay() {
+  isCounting = false;
+  isFinished = false;
+  clearInterval(updateInterval);
+  stopWatch = new Timer();
+
+  document.getElementById('seconds').innerText = "00";
+  document.getElementById('millis').innerText = "000";
+  document.getElementById('main-button').value = "Start";
+  document.getElementById('leaderboard').style.display = 'none';
+}
+
+// ------------------
+// Update Display
+// (While Counting)
+// ------------------
+function updateDisplay() {
+  // Check if time exceeded the currentMode
+  const duration = stopWatch.getDuration();
+  let s = Math.floor(duration / 1000);
+
+  if (s >= parseInt(currentMode)) {
+    // If we hit the target time, auto-stop
+    stopWatch.stop();
+    clearInterval(updateInterval);
+
+    isCounting = false;
+    isFinished = true;
+
+    // Reveal final time and show leaderboard
+    showFinalTime();
+    document.getElementById('leaderboard').style.display = 'block';
+
+    document.getElementById('main-button').value = "Reset";
+  }
+  // If we wanted a ticking placeholder, we could do it here, 
+  // but for now we simply keep the `-- // --` unless we stop.
+}
+
+// ------------------
+// Submit Score
+// ------------------
 function submitScore() {
   if (!isFinished) {
-    alert("You must finish the timer before submitting a score!");
+    alert("Finish the timer before submitting a score!");
     return;
   }
   let playerName = document.getElementById('player-name').value.trim();
   if (!playerName) playerName = "Anonymous";
 
-  let dur = stopWatch.getDuration();
-  let finalSeconds = (dur / 1000).toFixed(3);
+  const duration = stopWatch.getDuration();
+  let finalSeconds = (duration / 1000).toFixed(3);
 
   let data = { name: playerName, mode: currentMode, score: finalSeconds };
 
@@ -136,35 +204,49 @@ function submitScore() {
       fetchLeaderboard();
       showShareLink(finalSeconds);
     } else {
-      alert("There was a problem saving your score.");
+      alert("Problem saving your score.");
     }
   })
-  .catch(err => console.log("Error: ", err));
+  .catch(err => console.error("Error:", err));
 }
 
-// Fetch leaderboard data
+// ------------------
+// Fetch Leaderboard
+// (Top 20 per mode,
+// sorted by % deviation)
+// ------------------
 function fetchLeaderboard() {
   fetch('/leaderboard')
     .then(response => response.json())
     .then(data => {
       let tbody = document.querySelector('#leaderboard-table tbody');
       tbody.innerHTML = "";
+
       data.forEach(entry => {
-        let tr = document.createElement('tr');
-        tr.innerHTML = `<td>${entry.name}</td><td>${entry.mode}</td><td>${entry.score}</td>`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${entry.name}</td>
+          <td>${entry.mode}</td>
+          <td>${entry.score}</td>
+          <td>${entry.deviation}</td>
+        `;
         tbody.appendChild(tr);
       });
     })
-    .catch(err => console.log("Error: ", err));
+    .catch(err => console.error("Error:", err));
 }
 
-// Share link functions
+// ------------------
+// Share Link
+// ------------------
 function showShareLink(finalSeconds) {
   const linkContainer = document.getElementById('share-link-container');
   const linkField = document.getElementById('share-link');
+
   let baseUrl = window.location.href.split('?')[0];
   let shareUrl = baseUrl + '?score=' + finalSeconds;
   linkField.value = shareUrl;
+
   linkContainer.style.display = 'block';
 }
 

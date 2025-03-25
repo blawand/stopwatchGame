@@ -1,125 +1,253 @@
-body {
-  background: black;
-  font-family: 'Space Mono', monospace;
-  height: 100%;
+/* GLOBAL RESETS & FONTS */
+* {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  width: 100%;
-  min-width: 1000px;
-  min-height: 600px;
-  color: white;
 }
 
-#horizon {
-  display: block;
-  height: 1px;
-  left: 0;
-  overflow: visible;
-  position: absolute;
+body {
+  font-family: 'Quicksand', sans-serif;
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+}
+
+/* OUTER WRAPPER for a centered card look */
+.outer-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  padding: 20px;
+}
+
+/* MAIN CONTAINER (CARD STYLE) */
+.container {
+  background-color: rgba(255, 255, 255, 0.8);
+  margin: 0 auto;
+  width: 90%;
+  max-width: 700px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  padding: 40px 30px;
   text-align: center;
-  top: 50%;
-  width: 100%;
 }
 
-#content {
-  position: relative;
-  width: 900px;
-  top: -200px;
-  margin: auto;
+/* TITLE */
+.title {
+  font-size: 2.2em;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 20px;
 }
 
-#timetext {
-  font-size: 200px;
+/* TIMER DISPLAY */
+.timer-container {
+  margin: 20px 0;
+}
+
+.timer-display {
+  font-size: 4em;
   font-weight: bold;
-  margin: 60px;
-  padding: 0;
+  letter-spacing: 2px;
+  display: inline-block;
+  padding: 10px 30px;
+  background-color: #fff;
+  color: #333;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+  user-select: none;
+  transition: transform 0.2s ease;
 }
 
-#seconds, #millis {
-  font-size: 200px;
+.timer-display:hover {
+  transform: scale(1.03);
 }
 
-.button {
-  font-family: 'Space Mono', monospace;
-  background: #040404;
-  border: 10px solid white;
-  color: white;
-  font-size: 70px;
-  height: 140px;
-  text-transform: uppercase;
-  width: 100%;
-  margin: 30px auto;
-  cursor: pointer;
-}
-
-#mode-container {
-  margin-top: 30px;
+/* MODE BUTTONS */
+.mode-container {
+  margin: 15px 0 25px 0;
 }
 
 .mode-button {
-  font-family: 'Space Mono', monospace;
-  background: none;
-  border: 2px solid white;
-  color: white;
-  font-size: 20px;
+  background: #ff8aa7;
+  border: none;
+  font-size: 1em;
+  padding: 10px 20px;
   margin: 5px;
-  padding: 10px;
+  border-radius: 6px;
   cursor: pointer;
+  color: #fff;
+  transition: background 0.3s ease, transform 0.2s ease;
+  font-weight: 600;
 }
 
-#share-container {
-  margin-top: 20px;
+.mode-button:hover {
+  background: #ff6689;
+  transform: translateY(-1px);
+}
+
+/* MAIN START/STOP BUTTON */
+.button-container {
+  margin: 20px auto;
+}
+
+.main-button {
+  font-size: 1.4em;
+  background: #ffc107;
+  border: none;
+  color: #333;
+  padding: 15px 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  font-weight: 600;
+}
+
+.main-button:hover {
+  background: #ffca2c;
+  transform: translateY(-1px);
+}
+
+/* SCORE SUBMISSION */
+.score-input-container {
+  margin: 20px 0;
 }
 
 #player-name {
-  width: 200px;
-  font-size: 16px;
-  padding: 5px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  border: 1px solid white;
-  background: black;
-  color: white;
+  width: 220px;
+  font-size: 1em;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-right: 8px;
 }
 
 #submit-score {
-  font-size: 16px;
-  margin-left: 10px;
-  padding: 5px 10px;
+  background: #8bc34a;
+  border: none;
+  color: #fff;
+  font-size: 1em;
+  padding: 10px 16px;
+  border-radius: 6px;
   cursor: pointer;
-  border: 2px solid white;
-  background: black;
-  color: white;
+  transition: background 0.3s ease, transform 0.2s ease;
+  font-weight: 600;
 }
 
-#share-link-container {
-  margin-top: 10px;
+#submit-score:hover {
+  background: #7cb342;
+  transform: translateY(-1px);
+}
+
+/* SHARE CONTAINER */
+.share-container {
+  margin: 20px 0;
+}
+
+.share-container p {
+  margin-bottom: 10px;
+  font-weight: 600;
 }
 
 #share-link {
-  width: 300px;
-  font-size: 16px;
-  padding: 5px;
-  border: 1px solid white;
-  background: black;
-  color: white;
+  width: 260px;
+  font-size: 1em;
+  padding: 8px;
+  margin-right: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
-#leaderboard {
-  margin-top: 40px;
-  width: 100%;
-  text-align: left;
+.share-container button {
+  background: #03a9f4;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  font-weight: 600;
+}
+
+.share-container button:hover {
+  background: #039be5;
+  transform: translateY(-1px);
+}
+
+/* LEADERBOARD */
+.leaderboard {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.leaderboard h2 {
+  font-size: 1.6em;
+  margin-bottom: 15px;
+  color: #444;
+  font-weight: 600;
 }
 
 #leaderboard-table {
-  width: 100%;
-  border-collapse: collapse;
   margin: 0 auto;
-  font-size: 16px;
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 600px;
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 #leaderboard-table th,
 #leaderboard-table td {
-  border: 1px solid white;
-  padding: 8px;
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+#leaderboard-table thead {
+  background-color: #f7f7f7;
+}
+
+#leaderboard-table th {
+  color: #666;
+  font-weight: 600;
+}
+
+#leaderboard-table tr:last-child td {
+  border-bottom: none;
+}
+
+#leaderboard-table td {
+  color: #333;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 600px) {
+  .timer-display {
+    font-size: 2.5em;
+  }
+
+  .main-button {
+    width: 100%;
+    font-size: 1.2em;
+    padding: 15px 0;
+  }
+
+  .mode-button {
+    width: 100%;
+    margin: 8px 0;
+    font-size: 1em;
+  }
+
+  #player-name {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  #submit-score {
+    width: 100%;
+  }
 }
