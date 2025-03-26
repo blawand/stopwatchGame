@@ -293,6 +293,10 @@ body {
     width: 100%;
   }
 
+  #share-link {
+    margin-top: 10px;
+  }
+
   #leaderboard-table th,
   #leaderboard-table td {
     padding: 8px;

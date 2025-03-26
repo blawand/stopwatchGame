@@ -55,9 +55,6 @@ function initPage() {
     if (['10', '60', '100'].includes(sharedMode)) {
       switchMode(sharedMode);
     }
-  } else if (sharedScore) {
-    // If only score is in the query (older links)
-    alert(`A friend shared a score of ${sharedScore} seconds!`);
   }
 
   // Fetch leaderboard once at startup
@@ -164,7 +161,6 @@ function submitScore() {
   .then(res => res.json())
   .then(result => {
     if (result.success) {
-      alert("Score submitted successfully!");
       fetchLeaderboard();
       showShareLink(finalSeconds);
     }
@@ -176,25 +172,66 @@ function submitScore() {
 // Show Share Link
 // ------------------
 function showShareLink(sec) {
-  // Construct a friendly message that includes the user’s score and the mode
-  const shareMessage = `Check out this Stopwatch Game! Try to beat my score of ${sec}s in the ${currentMode}s mode: `
-    + `${window.location.origin}${window.location.pathname}?score=${sec}&mode=${currentMode}`;
-
+  const shareMessage = `Play this Stopwatch Game! Try to beat my score of ${sec}s in the ${currentMode}s mode: ${window.location.origin}${window.location.pathname}?score=${sec}&mode=${currentMode}`;
   const link = document.getElementById('share-link');
-  link.value = shareMessage; // Put the full text into the text field
-
+  link.value = shareMessage;
   document.getElementById('share-link-container').style.display = 'block';
 }
 
 function copyShareLink() {
   document.getElementById('share-link').select();
   document.execCommand('copy');
-  alert('Link copied!');
 }
 
 // ------------------
 // Remaining functions (unchanged)
 // ------------------
-function fetchLeaderboard() { fetch('/leaderboard').then(r => r.json()).then(data => { const tbody = document.querySelector('#leaderboard-table tbody'); tbody.innerHTML=''; data.forEach(e => { const tr=document.createElement('tr'); tr.innerHTML=`<td>${e.name}</td><td>${e.mode}</td><td>${e.score}</td><td>${e.deviation}</td>`; tbody.appendChild(tr); }); }); }
+function fetchLeaderboard() {
+  fetch('/leaderboard')
+    .then(r => r.json())
+    .then(data => {
+      const leaderboardDiv = document.getElementById('leaderboard');
+      leaderboardDiv.innerHTML = ''; // Clear any previous content
+
+      // Group scores by mode
+      const groups = data.reduce((acc, score) => {
+        (acc[score.mode] = acc[score.mode] || []).push(score);
+        return acc;
+      }, {});
+
+      // For each mode, create a header and a table
+      Object.keys(groups).forEach(mode => {
+        // Create a mode header
+        const modeHeader = document.createElement('h3');
+        modeHeader.textContent = `${mode}s Mode High Scores`;
+        leaderboardDiv.appendChild(modeHeader);
+
+        // Create a table for this mode
+        const table = document.createElement('table');
+        table.className = 'leaderboard-table';
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Time (s)</th>
+              <th>Error (%)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `;
+
+        // Populate the table body with scores
+        const tbody = table.querySelector('tbody');
+        groups[mode].forEach(entry => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${entry.name}</td><td>${entry.score}</td><td>${entry.deviation}</td>`;
+          tbody.appendChild(tr);
+        });
+
+        leaderboardDiv.appendChild(table);
+      });
+    });
+}
+
 function showShareLink(sec) { const link=document.getElementById('share-link'); link.value=`${window.location.href.split('?')[0]}?score=${sec}`; document.getElementById('share-link-container').style.display='block'; }
-function copyShareLink() { document.getElementById('share-link').select(); document.execCommand('copy'); alert('Link copied!'); }
+function copyShareLink() { document.getElementById('share-link').select(); document.execCommand('copy');}

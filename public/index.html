@@ -50,26 +50,11 @@
       <div id="share-link-container" class="share-container" style="display: none;">
         <p>Share your score!</p>
         <input type="text" id="share-link" readonly />
-        <button onclick="copyShareLink()">Copy Link</button>
+        <button onclick="copyShareLink()">Copy</button>
       </div>
 
       <!-- High Scores -->
-      <div id="leaderboard" class="leaderboard" style="display: none;">
-        <h2>High Scores - Top 20</h2>
-        <table id="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Mode (s)</th>
-              <th>Time (s)</th>
-              <th>Error (%)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Filled dynamically -->
-          </tbody>
-        </table>
-      </div>
+      <div id="leaderboard" class="leaderboard" style="display: none;"></div>
     </div>
   </div>
 </body>
