@@ -9,12 +9,11 @@ body {
   font-family: 'Quicksand', sans-serif;
   background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
   min-height: 100vh;
-  margin: 0;
   padding: 20px;
   color: #333;
 }
 
-/* OUTER WRAPPER (Optional) */
+/* OUTER WRAPPER */
 .outer-wrapper {
   width: 100%;
   max-width: 1200px;
@@ -22,7 +21,7 @@ body {
   padding: 20px;
 }
 
-/* MAIN CONTAINER (CARD STYLE) */
+/* MAIN CONTAINER */
 .container {
   background-color: rgba(255, 255, 255, 0.8);
   margin: 40px auto;
@@ -68,7 +67,7 @@ body {
 
 /* MODE BUTTONS */
 .mode-container {
-  margin: 15px 0 25px 0;
+  margin: 15px 0 25px;
 }
 
 .mode-button {
@@ -91,7 +90,6 @@ body {
 
 .selected-mode {
   background: #fd5b81 !important;
-  transform: none !important;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
@@ -108,7 +106,6 @@ body {
   padding: 15px 40px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.2px ease;
   font-weight: 600;
 }
 
@@ -124,7 +121,6 @@ body {
 
 #player-name {
   width: 240px;
-  font-size: 1em;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -135,11 +131,9 @@ body {
   background: #8bc34a;
   border: none;
   color: #fff;
-  font-size: 1em;
   padding: 10px 16px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.2px ease;
   font-weight: 600;
 }
 
@@ -159,10 +153,9 @@ body {
 }
 
 #share-link {
-  width: 260px;
-  font-size: 1em;
+  width: 100%;
+  max-width: 260px;
   padding: 8px;
-  margin-right: 6px;
   border: 1px solid #ccc;
   border-radius: 6px;
 }
@@ -174,7 +167,6 @@ body {
   padding: 10px 14px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.2px ease;
   font-weight: 600;
 }
 
@@ -189,19 +181,20 @@ body {
   text-align: center;
 }
 
-.leaderboard h2 {
+.leaderboard h3 {
   font-size: 1.6em;
-  margin-bottom: 15px;
+  margin-top: 24px;
+  margin-bottom: 8px;
   color: #444;
   font-weight: 600;
 }
 
 .leaderboard-table {
-  margin: 0 auto;
+  margin: 0 auto 24px;
   border-collapse: collapse;
   width: 100%;
   max-width: 600px;
-  background-color: #fff;
+  background: #fff;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -219,30 +212,20 @@ body {
 }
 
 .leaderboard-table th {
-  color: #666;
   font-weight: 600;
-}
-
-.leaderboard-table tr:last-child td {
-  border-bottom: none;
-}
-
-.leaderboard-table td {
-  color: #333;
 }
 
 /* MOBILE (≤600px) */
 @media (max-width: 600px) {
   body {
     padding: 8px;
-    margin: 0;
   }
 
   .container {
     width: 100%;
     max-width: 360px;
     margin: 16px auto;
-    padding: 20px 16px;
+    padding: 20px;
     border-radius: 12px;
   }
 
@@ -269,14 +252,12 @@ body {
     width: 100%;
     padding: 14px 0;
     font-size: 1.1rem;
-    margin: 0;
     border-radius: 6px;
   }
 
   .main-button {
-    margin-top: 40px;
-    margin-bottom: 16px;
     width: 80%;
+    margin: 40px auto 16px;
     font-size: 1.5rem;
   }
 
@@ -284,15 +265,16 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-bottom: 0;
   }
 
   #player-name {
     width: 100%;
   }
 
-  #share-link {
-    margin-top: 10px;
+  .share-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .leaderboard-table th,

@@ -233,5 +233,4 @@ function fetchLeaderboard() {
     });
 }
 
-function showShareLink(sec) { const link=document.getElementById('share-link'); link.value=`${window.location.href.split('?')[0]}?score=${sec}`; document.getElementById('share-link-container').style.display='block'; }
 function copyShareLink() { document.getElementById('share-link').select(); document.execCommand('copy');}
