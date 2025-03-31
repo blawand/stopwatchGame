@@ -1,61 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Stopwatch Game</title>
-  <meta name="description" content="Test your timing with this multi-mode stopwatch game.">
-  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600&display=swap" rel="stylesheet">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-  <script src="app.js" defer></script>
-</head>
-<body onload="initPage()">
-  <div class="outer-wrapper">
-    <div class="container">
-      <h1 class="title">Stopwatch Game</h1>
-      
-      <div class="timer-container">
-        <div id="timetext" class="timer-display">
-          <span id="seconds">00</span>.<span id="millis">000</span>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Stopwatch Game</title>
+    <meta
+      name="description"
+      content="Test your timing with this multi-mode stopwatch game."
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Quicksand:400,600&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="outer-wrapper">
+      <div class="container">
+        <h1 class="title">Stopwatch Game</h1>
+
+        <div class="timer-container">
+          <div id="timetext" class="timer-display">
+            <span id="seconds">00</span>.<span id="millis">000</span>
+          </div>
         </div>
-      </div>
 
-      <!-- Mode Buttons -->
-      <div class="mode-container">
-        <button class="mode-button selected-mode" id="mode-10" onclick="switchMode('10')">10s Mode</button>
-        <button class="mode-button" id="mode-60" onclick="switchMode('60')">60s Mode</button>
-        <button class="mode-button" id="mode-100" onclick="switchMode('100')">100s Mode</button>
-      </div>
+        <div class="mode-container">
+          <button
+            class="mode-button selected-mode"
+            id="mode-10"
+            onclick="switchMode('10')"
+          >
+            10s Mode
+          </button>
+          <button class="mode-button" id="mode-60" onclick="switchMode('60')">
+            60s Mode
+          </button>
+          <button class="mode-button" id="mode-100" onclick="switchMode('100')">
+            100s Mode
+          </button>
+        </div>
 
-      <div class="button-container">
-        <input
-          id="main-button"
-          class="main-button"
-          type="button"
-          value="Start"
-          onclick="onMainButtonClick()"
-        />
-      </div>
+        <div class="button-container">
+          <input
+            id="main-button"
+            class="main-button"
+            type="button"
+            value="Start"
+            onclick="onMainButtonClick()"
+            aria-label="Start or Stop Timer"
+          />
+        </div>
 
-      <div class="score-input-container">
-        <input
-          type="text"
-          id="player-name"
-          placeholder="Enter Your Name"
-        />
-        <button id="submit-score" onclick="submitScore()">Submit Score</button>
-      </div>
+        <div class="score-input-container">
+          <label for="player-name" class="visually-hidden"
+            >Enter Your Name</label
+          >
+          <input
+            type="text"
+            id="player-name"
+            placeholder="Enter Your Name (Optional)"
+            maxlength="20"
+            pattern="^[a-zA-Z0-9 _\-]+$"
+          />
+          <label for="confirm_email_field" class="visually-hidden"
+            >Do not fill this field</label
+          >
+          <input
+            type="text"
+            id="confirm_email_field"
+            name="confirm_email"
+            class="visually-hidden"
+            autocomplete="off"
+            tabindex="-1"
+          />
+          <button id="submit-score" onclick="submitScore()">
+            Submit Score
+          </button>
+        </div>
 
-      <!-- Share container -->
-      <div id="share-link-container" class="share-container" style="display: none;">
-        <p>Share your score!</p>
-        <input type="text" id="share-link" readonly />
-        <button onclick="copyShareLink()">Copy</button>
-      </div>
+        <div
+          id="share-link-container"
+          class="share-container"
+          style="display: none"
+        >
+          <p>Share your score!</p>
+          <label for="share-link" class="visually-hidden">Share Link</label>
+          <input
+            type="text"
+            id="share-link"
+            readonly
+            aria-label="Shareable link"
+          />
+          <button onclick="copyShareLink()" aria-label="Copy share link">
+            Copy
+          </button>
+        </div>
 
-      <!-- High Scores -->
-      <div id="leaderboard" class="leaderboard" style="display: none;"></div>
+        <div
+          id="leaderboard"
+          class="leaderboard"
+          style="display: none"
+          aria-live="polite"
+        ></div>
+      </div>
     </div>
-  </div>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>

@@ -1,44 +1,38 @@
-// ------------------
-// Simple Timer Class
-// ------------------
 function Timer() {
   this.startTime = null;
   this.stopTime = null;
   this.isRunning = false;
 
-  this.start = function() {
+  this.start = function () {
     this.startTime = new Date();
     this.stopTime = null;
     this.isRunning = true;
   };
 
-  this.stop = function() {
+  this.stop = function () {
     this.stopTime = new Date();
     this.isRunning = false;
   };
 
-  this.getDuration = function() {
+  this.getDuration = function () {
     if (!this.startTime) return 0;
-    return this.isRunning ? new Date() - this.startTime : this.stopTime - this.startTime;
+    return this.isRunning
+      ? new Date() - this.startTime
+      : this.stopTime - this.startTime;
   };
 }
 
-// ------------------
-// Global Variables
-// ------------------
 let stopWatch = new Timer();
-let currentMode = '10';
+let currentMode = "10";
 let isCounting = false;
 let isFinished = false;
+let pageLoadTime = Date.now();
 
-// ------------------
-// Page Initialization
-// ------------------
 function initPage() {
-  document.body.onkeydown = function(e) {
-    if (e.keyCode === 32) {
-      const tag = document.activeElement.tagName.toLowerCase();
-      if (tag !== 'input' && tag !== 'textarea') {
+  document.body.onkeydown = function (e) {
+    if (e.key === " " || e.keyCode === 32) {
+      const activeTag = document.activeElement.tagName.toLowerCase();
+      if (activeTag !== "input" && activeTag !== "textarea") {
         onMainButtonClick();
         e.preventDefault();
       }
@@ -46,191 +40,236 @@ function initPage() {
   };
 
   const params = new URLSearchParams(window.location.search);
-  const sharedScore = params.get('score');
-  const sharedMode = params.get('mode');
+  const sharedScore = params.get("score");
+  const sharedMode = params.get("mode");
 
-  // If a user visited via a share link
   if (sharedScore && sharedMode) {
-    alert(`A friend shared a score of ${sharedScore} seconds in the ${sharedMode}s mode!`);
-    if (['10', '60', '100'].includes(sharedMode)) {
+    if (["10", "60", "100"].includes(sharedMode)) {
+      alert(
+        `A friend shared a score of ${sharedScore} seconds in the ${sharedMode}s mode!`
+      );
       switchMode(sharedMode);
+    } else {
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }
 
-  // Fetch leaderboard once at startup
   fetchLeaderboard();
 }
 
-// ------------------
-// Switch Mode
-// ------------------
 function switchMode(mode) {
+  if (isCounting) return;
   currentMode = mode;
   resetTimerDisplay();
-  document.getElementById('main-button').value = 'Start';
-  document.querySelectorAll('.mode-button').forEach(btn => btn.classList.remove('selected-mode'));
-  document.getElementById(`mode-${mode}`).classList.add('selected-mode');
+  document
+    .querySelectorAll(".mode-button")
+    .forEach((btn) => btn.classList.remove("selected-mode"));
+  document.getElementById(`mode-${mode}`).classList.add("selected-mode");
+  document.getElementById("main-button").value = "Start";
+  document.getElementById("leaderboard").style.display = "none";
+  document.getElementById("share-link-container").style.display = "none";
 }
 
-// ------------------
-// Main Button Click
-// ------------------
 function onMainButtonClick() {
   if (!isCounting && !isFinished) {
     stopWatch = new Timer();
     stopWatch.start();
     isCounting = true;
-    document.getElementById('seconds').innerText = '??';
-    document.getElementById('millis').innerText = '???';
-    document.getElementById('leaderboard').style.display = 'none';
+    isFinished = false;
+    document.getElementById("seconds").innerText = "??";
+    document.getElementById("millis").innerText = "???";
+    document.getElementById("leaderboard").style.display = "none";
+    document.getElementById("share-link-container").style.display = "none";
     removeFeedback();
-    document.getElementById('main-button').value = 'Stop';
+    document.getElementById("main-button").value = "Stop";
   } else if (isCounting && !isFinished) {
     stopWatch.stop();
     isCounting = false;
     isFinished = true;
     showFinalTime();
-    document.getElementById('leaderboard').style.display = 'block';
-    document.getElementById('main-button').value = 'Reset';
+    document.getElementById("leaderboard").style.display = "block";
+    document.getElementById("main-button").value = "Reset";
   } else {
     resetTimerDisplay();
+    document.getElementById("main-button").value = "Start";
+    document.getElementById("leaderboard").style.display = "none";
+    document.getElementById("share-link-container").style.display = "none";
   }
 }
 
-// ------------------
-// Show Final Time & Feedback
-// ------------------
 function showFinalTime() {
   const duration = stopWatch.getDuration();
-  const seconds = Math.floor(duration / 1000);
-  const millis = duration % 1000;
-
-  document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
-  document.getElementById('millis').innerText = String(millis).padStart(3, '0');
+  const finalSeconds = (duration / 1000).toFixed(3);
+  const parts = finalSeconds.split(".");
+  document.getElementById("seconds").innerText = parts[0].padStart(2, "0");
+  document.getElementById("millis").innerText = parts[1].padEnd(3, "0");
 
   const target = parseInt(currentMode);
   const error = (duration / 1000 - target).toFixed(3);
-  const direction = error >= 0 ? 'over' : 'under';
-  const feedbackText = `You were ${Math.abs(error)} seconds ${direction} the target of ${target} seconds.`;
+  const direction = error >= 0 ? "over" : "under";
+  const feedbackText = `You were ${Math.abs(
+    error
+  )} seconds ${direction} the target of ${target} seconds.`;
 
-  let feedbackEl = document.getElementById('feedback');
+  let feedbackEl = document.getElementById("feedback");
   if (!feedbackEl) {
-    feedbackEl = document.createElement('p');
-    feedbackEl.id = 'feedback';
-    document.querySelector('.timer-container').appendChild(feedbackEl);
+    feedbackEl = document.createElement("p");
+    feedbackEl.id = "feedback";
+    document.querySelector(".timer-container").appendChild(feedbackEl);
   }
   feedbackEl.innerText = feedbackText;
 }
 
-// ------------------
-// Reset Timer
-// ------------------
 function resetTimerDisplay() {
   isCounting = false;
   isFinished = false;
   stopWatch = new Timer();
 
-  document.getElementById('seconds').innerText = '00';
-  document.getElementById('millis').innerText = '000';
+  document.getElementById("seconds").innerText = "00";
+  document.getElementById("millis").innerText = "000";
   removeFeedback();
-  document.getElementById('main-button').value = 'Start';
-  document.getElementById('leaderboard').style.display = 'none';
 }
 
 function removeFeedback() {
-  const el = document.getElementById('feedback');
+  const el = document.getElementById("feedback");
   if (el) el.remove();
 }
 
-// ------------------
-// Submit Score
-// ------------------
 function submitScore() {
   if (!isFinished) {
     alert("Finish the timer before submitting a score!");
     return;
   }
-  let playerName = document.getElementById('player-name').value.trim() || "Anonymous";
-  const finalSeconds = (stopWatch.getDuration() / 1000).toFixed(3);
+  let playerName = document.getElementById("player-name").value.trim();
+  if (!playerName) {
+    playerName = "Anonymous";
+  }
 
-  fetch('/leaderboard', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: playerName, mode: currentMode, score: finalSeconds })
+  const finalSeconds = (stopWatch.getDuration() / 1000).toFixed(3);
+  const honeypotValue = document.getElementById("confirm_email_field").value;
+
+  fetch("/leaderboard", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: playerName,
+      mode: currentMode,
+      score: finalSeconds,
+      loadTimestamp: pageLoadTime,
+      honeypot: honeypotValue,
+    }),
   })
-  .then(res => res.json())
-  .then(result => {
-    if (result.success) {
-      fetchLeaderboard();
-      showShareLink(finalSeconds);
-    }
-  })
-  .catch(console.error);
+    .then((res) => {
+      if (!res.ok) {
+        return res.json().then((err) => {
+          throw new Error(err.message || "Submission failed");
+        });
+      }
+      return res.json();
+    })
+    .then((result) => {
+      if (result.success) {
+        fetchLeaderboard();
+        showShareLink(finalSeconds);
+      } else {
+        throw new Error(result.message || "Submission failed");
+      }
+    })
+    .catch((error) => {
+      console.error("Submission Error:", error);
+      alert(`Error submitting score: ${error.message}`);
+    });
 }
 
-// ------------------
-// Show Share Link
-// ------------------
 function showShareLink(sec) {
-  const shareMessage = `Play this Stopwatch Game! Try to beat my score of ${sec}s in the ${currentMode}s mode: ${window.location.origin}${window.location.pathname}?score=${sec}&mode=${currentMode}`;
-  const link = document.getElementById('share-link');
+  const shareUrl = `${window.location.origin}${
+    window.location.pathname
+  }?score=${encodeURIComponent(sec)}&mode=${encodeURIComponent(currentMode)}`;
+  const shareMessage = `Try to beat my score of ${sec}s in the ${currentMode}s mode! ${shareUrl}`;
+  const link = document.getElementById("share-link");
   link.value = shareMessage;
-  document.getElementById('share-link-container').style.display = 'block';
+  document.getElementById("share-link-container").style.display = "block";
 }
 
 function copyShareLink() {
-  document.getElementById('share-link').select();
-  document.execCommand('copy');
+  const linkInput = document.getElementById("share-link");
+  linkInput.select();
+  linkInput.setSelectionRange(0, 99999);
+  try {
+    document.execCommand("copy");
+    alert("Share link copied to clipboard!");
+  } catch (err) {
+    console.error("Failed to copy text: ", err);
+    alert("Failed to copy link. Please copy it manually.");
+  }
 }
 
-// ------------------
-// Remaining functions (unchanged)
-// ------------------
 function fetchLeaderboard() {
-  fetch('/leaderboard')
-    .then(r => r.json())
-    .then(data => {
-      const leaderboardDiv = document.getElementById('leaderboard');
-      leaderboardDiv.innerHTML = ''; // Clear any previous content
+  fetch("/leaderboard")
+    .then((r) => {
+      if (!r.ok) {
+        throw new Error("Failed to fetch leaderboard");
+      }
+      return r.json();
+    })
+    .then((data) => {
+      const leaderboardDiv = document.getElementById("leaderboard");
+      leaderboardDiv.innerHTML = "";
 
-      // Group scores by mode
       const groups = data.reduce((acc, score) => {
         (acc[score.mode] = acc[score.mode] || []).push(score);
         return acc;
       }, {});
 
-      // For each mode, create a header and a table
-      Object.keys(groups).forEach(mode => {
-        // Create a mode header
-        const modeHeader = document.createElement('h3');
-        modeHeader.textContent = `${mode}s Mode High Scores`;
-        leaderboardDiv.appendChild(modeHeader);
+      const modeOrder = ["10", "60", "100"];
 
-        // Create a table for this mode
-        const table = document.createElement('table');
-        table.className = 'leaderboard-table';
-        table.innerHTML = `
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Time (s)</th>
-              <th>Error (%)</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        `;
+      modeOrder.forEach((mode) => {
+        if (groups[mode] && groups[mode].length > 0) {
+          const modeHeader = document.createElement("h3");
+          modeHeader.textContent = `${mode}s Mode High Scores`;
+          leaderboardDiv.appendChild(modeHeader);
 
-        // Populate the table body with scores
-        const tbody = table.querySelector('tbody');
-        groups[mode].forEach(entry => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${entry.name}</td><td>${entry.score}</td><td>${entry.deviation}</td>`;
-          tbody.appendChild(tr);
-        });
+          const table = document.createElement("table");
+          table.className = "leaderboard-table";
+          table.innerHTML = `
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Time (s)</th>
+                  <th>Error (%)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            `;
 
-        leaderboardDiv.appendChild(table);
+          const tbody = table.querySelector("tbody");
+          groups[mode].forEach((entry) => {
+            const tr = document.createElement("tr");
+            const nameTd = document.createElement("td");
+            nameTd.textContent = entry.name;
+            const scoreTd = document.createElement("td");
+            scoreTd.textContent = entry.score;
+            const deviationTd = document.createElement("td");
+            deviationTd.textContent = entry.deviation;
+
+            tr.appendChild(nameTd);
+            tr.appendChild(scoreTd);
+            tr.appendChild(deviationTd);
+            tbody.appendChild(tr);
+          });
+          leaderboardDiv.appendChild(table);
+        }
       });
+
+      if (leaderboardDiv.innerHTML === "") {
+        leaderboardDiv.textContent = "No scores yet!";
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching leaderboard:", error);
+      const leaderboardDiv = document.getElementById("leaderboard");
+      leaderboardDiv.innerHTML = "<p>Could not load leaderboard data.</p>";
     });
 }
 
-function copyShareLink() { document.getElementById('share-link').select(); document.execCommand('copy');}
+document.addEventListener("DOMContentLoaded", initPage);
