@@ -1,12 +1,14 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const fs = require("fs");
 const path = require("path");
 const rateLimit = require("express-rate-limit");
+require("dotenv").config(); // Load environment variables from .env file
+
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const scoresFile = path.join(__dirname, "scores.json");
+
 const MIN_SUBMISSION_TIME_MS = 2000;
 const MAX_NAME_LENGTH = 20;
 const MIN_NAME_LENGTH = 1;
@@ -37,23 +39,32 @@ app.use(limiter);
 app.use(bodyParser.json({ limit: "5kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-if (!fs.existsSync(scoresFile)) {
-  try {
-    fs.writeFileSync(scoresFile, JSON.stringify([]));
-  } catch (err) {
-    console.error("Failed to create scores file:", err);
-    process.exit(1);
-  }
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Supabase URL and Key must be set as environment variables.");
+  process.exit(1);
 }
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/leaderboard", (req, res) => {
+app.get("/leaderboard", async (req, res) => {
   try {
-    let scoresData = fs.readFileSync(scoresFile);
-    let scores = JSON.parse(scoresData);
+    const { data: scores, error } = await supabase
+      .from("scores")
+      .select("*")
+      .order("deviation", { ascending: true })
+      .limit(200); // Increased limit
+
+    if (error) {
+      throw error;
+    }
 
     let modes = { 10: [], 60: [], 100: [] };
 
@@ -90,7 +101,7 @@ app.get("/leaderboard", (req, res) => {
   }
 });
 
-app.post("/leaderboard", postLimiter, (req, res) => {
+app.post("/leaderboard", postLimiter, async (req, res) => {
   const { name, mode, score, loadTimestamp, honeypot } = req.body;
   const submissionTime = Date.now();
 
@@ -139,13 +150,19 @@ app.post("/leaderboard", postLimiter, (req, res) => {
       .json({ success: false, message: "Invalid score value." });
   }
 
+  const target = parseFloat(mode);
+  const deviation = ((Math.abs(numericScore - target) / target) * 100).toFixed(
+    2
+  );
+
   try {
-    let scoresData = fs.readFileSync(scoresFile);
-    let scores = JSON.parse(scoresData);
+    const { data, error } = await supabase
+      .from("scores")
+      .insert([{ name: name.trim(), mode, score, deviation }]);
 
-    scores.push({ name: name.trim(), mode, score });
-
-    fs.writeFileSync(scoresFile, JSON.stringify(scores, null, 2));
+    if (error) {
+      throw error;
+    }
 
     res.json({ success: true });
   } catch (err) {
