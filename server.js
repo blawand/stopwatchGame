@@ -2,15 +2,16 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
 const rateLimit = require("express-rate-limit");
-require("dotenv").config(); // Keep for local dev, Vercel will use its own env vars
+require("dotenv").config();
 
 const { createClient } = require("@supabase/supabase-js");
 
-console.log("--- Server script started ---"); // Log script start
+console.log("--- Server script started ---");
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3000;
-console.log(`Attempting to run on PORT: ${PORT}`); // Log port
+console.log(`Attempting to run on PORT: ${PORT}`);
 
 const MIN_SUBMISSION_TIME_MS = 2000;
 const MAX_NAME_LENGTH = 20;
@@ -49,24 +50,21 @@ console.log("Attempting to read environment variables for Supabase...");
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-// More detailed logging for env vars
 console.log(
   `SUPABASE_URL read as: ${
     supabaseUrl ? supabaseUrl.substring(0, 20) + "..." : "MISSING"
   }`
-); // Log first part of URL or MISSING
+);
 console.log(
   `SUPABASE_ANON_KEY read as: ${supabaseKey ? "PRESENT" : "MISSING"}`
-); // Just check if key is present
+);
 
-let supabase; // Declare supabase client variable
+let supabase;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error(
     "CRITICAL ERROR: Supabase URL and/or Key missing or not read correctly from environment variables."
   );
-  // Consider *not* exiting here for debugging, to see if server can listen
-  // process.exit(1); // Temporarily comment out exit for debugging
 } else {
   try {
     console.log(
@@ -79,7 +77,6 @@ if (!supabaseUrl || !supabaseKey) {
       "CRITICAL ERROR: Failed to initialize Supabase client:",
       initError
     );
-    // process.exit(1); // Exit if initialization fails
   }
 }
 
@@ -94,12 +91,10 @@ app.get("/leaderboard", async (req, res) => {
   );
   if (!supabase) {
     console.error("Supabase client not available for /leaderboard GET");
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Database connection not initialized.",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Database connection not initialized.",
+    });
   }
   try {
     console.log("Fetching scores from Supabase...");
@@ -111,42 +106,55 @@ app.get("/leaderboard", async (req, res) => {
 
     if (error) {
       console.error("Supabase fetch error:", error);
-      throw error; // Re-throw to be caught by the outer catch block
+      throw error;
     }
     console.log(
       `Successfully fetched ${scores ? scores.length : 0} scores from Supabase.`
     );
 
-    // ... (rest of your score processing logic) ...
     let modes = { 10: [], 60: [], 100: [] };
-    scores.forEach((sc) => {
-      if (
-        ALLOWED_MODES.includes(sc.mode) &&
-        typeof sc.score === "string" &&
-        SCORE_REGEX.test(sc.score)
-      ) {
-        let numericScore = parseFloat(sc.score);
-        let target = parseFloat(sc.mode);
-        if (!isNaN(numericScore) && !isNaN(target) && target > 0) {
-          // Use existing deviation if present, otherwise calculate (should be present now)
-          sc.deviation =
-            sc.deviation !== undefined
-              ? parseFloat(sc.deviation).toFixed(2)
-              : ((Math.abs(numericScore - target) / target) * 100).toFixed(2);
-          modes[sc.mode].push(sc);
+    if (scores && scores.length > 0) {
+      scores.forEach((sc) => {
+        if (
+          ALLOWED_MODES.includes(sc.mode) &&
+          typeof sc.score === "string" &&
+          SCORE_REGEX.test(sc.score) &&
+          sc.deviation !== null && // Added check for null deviation
+          !isNaN(parseFloat(sc.deviation)) // Ensure deviation is a number
+        ) {
+          let numericScore = parseFloat(sc.score);
+          let target = parseFloat(sc.mode);
+          if (!isNaN(numericScore) && !isNaN(target) && target > 0) {
+            sc.deviation = parseFloat(sc.deviation).toFixed(2); // Use stored deviation
+            modes[sc.mode].push(sc);
+          }
+        } else if (!ALLOWED_MODES.includes(sc.mode)) {
+          console.warn(`Filtered out score with invalid mode: ${sc.mode}`, sc);
+        } else if (
+          typeof sc.score !== "string" ||
+          !SCORE_REGEX.test(sc.score)
+        ) {
+          console.warn(
+            `Filtered out score with invalid score format: ${sc.score}`,
+            sc
+          );
+        } else if (sc.deviation === null || isNaN(parseFloat(sc.deviation))) {
+          console.warn(
+            `Filtered out score with invalid deviation: ${sc.deviation}`,
+            sc
+          );
         }
-      }
-    });
+      });
 
-    Object.keys(modes).forEach((m) => {
-      modes[m].sort(
-        (a, b) => parseFloat(a.deviation) - parseFloat(b.deviation)
-      );
-      modes[m] = modes[m].slice(0, 20);
-    });
+      Object.keys(modes).forEach((m) => {
+        modes[m].sort(
+          (a, b) => parseFloat(a.deviation) - parseFloat(b.deviation)
+        );
+        modes[m] = modes[m].slice(0, 20);
+      });
+    }
 
     let final = [...modes["10"], ...modes["60"], ...modes["100"]];
-    // console.log("Processed leaderboard data:", final); // Optional: log processed data
     res.json(final);
   } catch (err) {
     console.error(
@@ -165,17 +173,14 @@ app.post("/leaderboard", postLimiter, async (req, res) => {
   );
   if (!supabase) {
     console.error("Supabase client not available for /leaderboard POST");
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Database connection not initialized.",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Database connection not initialized.",
+    });
   }
   const { name, mode, score, loadTimestamp, honeypot } = req.body;
   const submissionTime = Date.now();
 
-  // ... (rest of your validation logic) ...
   if (honeypot) {
     console.warn("Honeypot field filled, likely bot detected.");
     return res.status(400).json({ success: false, message: "Bot detected." });
@@ -204,13 +209,46 @@ app.post("/leaderboard", postLimiter, async (req, res) => {
         "Invalid name. Must be 1-20 alphanumeric characters, spaces, underscores, or hyphens.",
     });
   }
-  // ... (rest of validation)
+
+  if (!ALLOWED_MODES.includes(mode)) {
+    console.warn(`Invalid mode submitted: ${mode}`);
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid mode selected." });
+  }
+
+  if (typeof score !== "string" || !SCORE_REGEX.test(score)) {
+    console.warn(`Invalid score format submitted: ${score}`);
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid score format." });
+  }
 
   const numericScore = parseFloat(score);
   const target = parseFloat(mode);
-  const deviation = ((Math.abs(numericScore - target) / target) * 100).toFixed(
-    2
-  );
+
+  if (isNaN(numericScore) || isNaN(target) || target <= 0) {
+    console.warn(
+      `Invalid numeric score or target: score=${numericScore}, target=${target}`
+    );
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid score calculation values." });
+  }
+
+  const deviationValue = (Math.abs(numericScore - target) / target) * 100;
+  if (isNaN(deviationValue)) {
+    console.error(
+      `Calculated deviation is NaN: score=${numericScore}, target=${target}`
+    );
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Internal error calculating score deviation.",
+      });
+  }
+  const deviation = deviationValue.toFixed(2);
 
   try {
     console.log(`Attempting to insert score for ${name}...`);
@@ -230,18 +268,28 @@ app.post("/leaderboard", postLimiter, async (req, res) => {
       `[${new Date().toISOString()}] Error processing /leaderboard POST:`,
       err
     );
-    res.status(500).json({ success: false, message: "Error saving score." });
+    // Provide specific feedback for duplicate key errors if possible, else generic
+    if (err.code === "23505") {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message:
+            "Database error: Could not save score due to conflict. Please try again.",
+        });
+    } else {
+      res.status(500).json({ success: false, message: "Error saving score." });
+    }
   }
 });
 
-// Ensure app.listen is called *after* all route definitions
 app
   .listen(PORT, () => {
     console.log(`--- Server attempting to listen on port ${PORT} ---`);
-    console.log(`--- Server successfully listening! Ready for requests. ---`); // Confirmation log
+    console.log(`--- Server successfully listening! Ready for requests. ---`);
   })
   .on("error", (err) => {
-    console.error("--- Server failed to start listening: ---", err); // Log specific listen errors
+    console.error("--- Server failed to start listening: ---", err);
   });
 
-console.log("--- Server script finished initial execution ---"); // Log end of script run
+console.log("--- Server script finished initial execution ---");
