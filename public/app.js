@@ -43,6 +43,10 @@ function initPage() {
   const sharedScore = params.get("score");
   const sharedMode = params.get("mode");
 
+  // Explicitly hide leaderboard and share container on initial load
+  document.getElementById("leaderboard").style.display = "none";
+  document.getElementById("share-link-container").style.display = "none";
+
   if (sharedScore && sharedMode) {
     if (["10", "60", "100"].includes(sharedMode)) {
       alert(
@@ -53,26 +57,28 @@ function initPage() {
     } else {
       // Clear invalid params
       window.history.replaceState({}, document.title, window.location.pathname);
+      // Ensure initial mode is set correctly if params invalid
+      switchMode(currentMode); // Set default mode display
     }
   } else {
     // Ensure initial mode is set correctly if no valid params
     switchMode(currentMode); // Set default mode display
   }
 
-  fetchLeaderboard(); // Fetch leaderboard on initial load
+  // Removed fetchLeaderboard() call from here
 }
 
 function switchMode(mode) {
   if (isCounting) return; // Don't switch modes while timer is running
   currentMode = mode;
-  resetTimerDisplay();
+  resetTimerDisplay(); // Reset timer display and feedback
   document
     .querySelectorAll(".mode-button")
     .forEach((btn) => btn.classList.remove("selected-mode"));
   document.getElementById(`mode-${mode}`).classList.add("selected-mode");
   document.getElementById("main-button").value = "Start"; // Reset button text
-  document.getElementById("leaderboard").style.display = "none"; // Hide leaderboard on mode switch
-  document.getElementById("share-link-container").style.display = "none"; // Hide share link
+  document.getElementById("leaderboard").style.display = "none"; // Ensure leaderboard is hidden
+  document.getElementById("share-link-container").style.display = "none"; // Ensure share link is hidden
 }
 
 function onMainButtonClick() {
@@ -94,8 +100,8 @@ function onMainButtonClick() {
     isCounting = false;
     isFinished = true;
     showFinalTime(); // Display the final time and feedback
-    fetchLeaderboard(); // Fetch and show leaderboard immediately after stopping
-    document.getElementById("leaderboard").style.display = "block";
+    fetchLeaderboard(); // Fetch and show leaderboard ONLY after stopping
+    // fetchLeaderboard will handle making the div visible if scores exist
     document.getElementById("main-button").value = "Reset"; // Change button text
   } else {
     // --- Reset ---
@@ -239,7 +245,6 @@ function copyShareLink() {
   linkInput.setSelectionRange(0, 99999); // For mobile devices
 
   let message = "Could not copy. Please copy manually.";
-  let success = false;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard
@@ -269,6 +274,10 @@ function copyShareLink() {
 }
 
 function fetchLeaderboard() {
+  const leaderboardDiv = document.getElementById("leaderboard"); // Get reference
+  leaderboardDiv.innerHTML = `<p>Loading leaderboard...</p>`; // Show loading state
+  leaderboardDiv.style.display = "block"; // Make sure div is visible for loading message
+
   fetch("/leaderboard") // GET from the same endpoint
     .then((r) => {
       if (!r.ok) {
@@ -277,8 +286,7 @@ function fetchLeaderboard() {
       return r.json();
     })
     .then((data) => {
-      const leaderboardDiv = document.getElementById("leaderboard");
-      leaderboardDiv.innerHTML = ""; // Clear previous leaderboard
+      leaderboardDiv.innerHTML = ""; // Clear previous leaderboard/loading
 
       // Group scores by mode (data is already sorted by deviation overall)
       const groups = data.reduce((acc, score) => {
@@ -351,18 +359,15 @@ function fetchLeaderboard() {
 
       // Display message if no scores found for any mode
       if (!hasScores) {
-        leaderboardDiv.textContent = "No scores yet for any mode!";
-      }
-      // Ensure leaderboard is visible after fetch (if it contained scores)
-      if (hasScores) {
+        leaderboardDiv.innerHTML = "<p>No scores yet for any mode!</p>"; // Change message slightly
+        // Keep the div visible to show the "No scores yet" message
         leaderboardDiv.style.display = "block";
       } else {
-        leaderboardDiv.style.display = "none"; // Hide if empty
+        leaderboardDiv.style.display = "block"; // Ensure visible if scores were added
       }
     })
     .catch((error) => {
       console.error("Error fetching leaderboard:", error);
-      const leaderboardDiv = document.getElementById("leaderboard");
       leaderboardDiv.innerHTML = `<p style="color: red;">Could not load leaderboard data: ${error.message}</p>`;
       leaderboardDiv.style.display = "block"; // Show the error message
     });
