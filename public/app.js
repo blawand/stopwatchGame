@@ -48,51 +48,60 @@ function initPage() {
       alert(
         `A friend shared a score of ${sharedScore} seconds in the ${sharedMode}s mode!`
       );
-      switchMode(sharedMode);
+      switchMode(sharedMode); // Apply shared mode
+      window.history.replaceState({}, document.title, window.location.pathname); // Clear params
     } else {
+      // Clear invalid params
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+  } else {
+    // Ensure initial mode is set correctly if no valid params
+    switchMode(currentMode); // Set default mode display
   }
 
-  fetchLeaderboard();
+  fetchLeaderboard(); // Fetch leaderboard on initial load
 }
 
 function switchMode(mode) {
-  if (isCounting) return;
+  if (isCounting) return; // Don't switch modes while timer is running
   currentMode = mode;
   resetTimerDisplay();
   document
     .querySelectorAll(".mode-button")
     .forEach((btn) => btn.classList.remove("selected-mode"));
   document.getElementById(`mode-${mode}`).classList.add("selected-mode");
-  document.getElementById("main-button").value = "Start";
-  document.getElementById("leaderboard").style.display = "none";
-  document.getElementById("share-link-container").style.display = "none";
+  document.getElementById("main-button").value = "Start"; // Reset button text
+  document.getElementById("leaderboard").style.display = "none"; // Hide leaderboard on mode switch
+  document.getElementById("share-link-container").style.display = "none"; // Hide share link
 }
 
 function onMainButtonClick() {
   if (!isCounting && !isFinished) {
-    stopWatch = new Timer();
+    // --- Start ---
+    stopWatch = new Timer(); // Create new timer instance
     stopWatch.start();
     isCounting = true;
     isFinished = false;
-    document.getElementById("seconds").innerText = "??";
+    document.getElementById("seconds").innerText = "??"; // Placeholder during run
     document.getElementById("millis").innerText = "???";
-    document.getElementById("leaderboard").style.display = "none";
+    document.getElementById("leaderboard").style.display = "none"; // Hide leaderboard during run
     document.getElementById("share-link-container").style.display = "none";
-    removeFeedback();
-    document.getElementById("main-button").value = "Stop";
+    removeFeedback(); // Clear previous feedback
+    document.getElementById("main-button").value = "Stop"; // Change button text
   } else if (isCounting && !isFinished) {
+    // --- Stop ---
     stopWatch.stop();
     isCounting = false;
     isFinished = true;
-    showFinalTime();
+    showFinalTime(); // Display the final time and feedback
+    fetchLeaderboard(); // Fetch and show leaderboard immediately after stopping
     document.getElementById("leaderboard").style.display = "block";
-    document.getElementById("main-button").value = "Reset";
+    document.getElementById("main-button").value = "Reset"; // Change button text
   } else {
+    // --- Reset ---
     resetTimerDisplay();
-    document.getElementById("main-button").value = "Start";
-    document.getElementById("leaderboard").style.display = "none";
+    document.getElementById("main-button").value = "Start"; // Change button text
+    document.getElementById("leaderboard").style.display = "none"; // Hide leaderboard on reset
     document.getElementById("share-link-container").style.display = "none";
   }
 }
@@ -105,17 +114,21 @@ function showFinalTime() {
   document.getElementById("millis").innerText = parts[1].padEnd(3, "0");
 
   const target = parseInt(currentMode);
-  const error = (duration / 1000 - target).toFixed(3);
+  const error = duration / 1000 - target; // Keep sign for direction
+  const deviationPercent = ((Math.abs(error) / target) * 100).toFixed(2); // Calculate deviation %
   const direction = error >= 0 ? "over" : "under";
-  const feedbackText = `You were ${Math.abs(
-    error
-  )} seconds ${direction} the target of ${target} seconds.`;
+  const feedbackText = `You were ${Math.abs(error).toFixed(
+    3
+  )} seconds ${direction} (${deviationPercent}%) the target of ${target} seconds.`;
 
   let feedbackEl = document.getElementById("feedback");
   if (!feedbackEl) {
     feedbackEl = document.createElement("p");
     feedbackEl.id = "feedback";
-    document.querySelector(".timer-container").appendChild(feedbackEl);
+    // Insert feedback after the timer display
+    document
+      .querySelector(".timer-display")
+      .insertAdjacentElement("afterend", feedbackEl);
   }
   feedbackEl.innerText = feedbackText;
 }
@@ -123,11 +136,11 @@ function showFinalTime() {
 function resetTimerDisplay() {
   isCounting = false;
   isFinished = false;
-  stopWatch = new Timer();
+  stopWatch = new Timer(); // Reset timer object
 
-  document.getElementById("seconds").innerText = "00";
+  document.getElementById("seconds").innerText = "00"; // Reset display
   document.getElementById("millis").innerText = "000";
-  removeFeedback();
+  removeFeedback(); // Remove any existing feedback message
 }
 
 function removeFeedback() {
@@ -142,89 +155,157 @@ function submitScore() {
   }
   let playerName = document.getElementById("player-name").value.trim();
   if (!playerName) {
-    playerName = "Anonymous";
+    playerName = "Anonymous"; // Default name
+  }
+  // Client-side name validation (mirroring backend)
+  const nameRegex = /^[a-zA-Z0-9 _\-]+$/;
+  if (
+    playerName !== "Anonymous" &&
+    (playerName.length < 1 ||
+      playerName.length > 20 ||
+      !nameRegex.test(playerName))
+  ) {
+    alert(
+      "Invalid name. Must be 1-20 alphanumeric characters, spaces, underscores, or hyphens."
+    );
+    return;
   }
 
   const finalSeconds = (stopWatch.getDuration() / 1000).toFixed(3);
   const honeypotValue = document.getElementById("confirm_email_field").value;
 
+  // Disable button during submission
+  const submitButton = document.getElementById("submit-score");
+  submitButton.disabled = true;
+  submitButton.textContent = "Submitting..."; // Indicate processing
+
   fetch("/leaderboard", {
+    // POST to the same endpoint
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name: playerName,
       mode: currentMode,
       score: finalSeconds,
-      loadTimestamp: pageLoadTime,
-      honeypot: honeypotValue,
+      loadTimestamp: pageLoadTime, // Include page load timestamp
+      honeypot: honeypotValue, // Include honeypot value
     }),
   })
     .then((res) => {
       if (!res.ok) {
+        // Try to parse error message from backend
         return res.json().then((err) => {
-          throw new Error(err.message || "Submission failed");
+          throw new Error(
+            err.message || `Submission failed with status: ${res.status}`
+          );
         });
       }
-      return res.json();
+      return res.json(); // Parse success response
     })
     .then((result) => {
       if (result.success) {
-        fetchLeaderboard();
-        showShareLink(finalSeconds);
+        fetchLeaderboard(); // Refresh leaderboard on success
+        showShareLink(finalSeconds); // Show share link on success
+        document.getElementById("player-name").value = ""; // Clear name input on success
       } else {
-        throw new Error(result.message || "Submission failed");
+        // Should be caught by !res.ok, but handle application-level failure just in case
+        throw new Error(result.message || "Submission indicated failure.");
       }
     })
     .catch((error) => {
       console.error("Submission Error:", error);
-      alert(`Error submitting score: ${error.message}`);
+      alert(`Error submitting score: ${error.message}`); // Show error to user
+    })
+    .finally(() => {
+      // Re-enable button regardless of success or failure
+      submitButton.disabled = false;
+      submitButton.textContent = "Submit Score";
     });
 }
 
 function showShareLink(sec) {
   const shareUrl = `${window.location.origin}${
-    window.location.pathname
+    window.location.pathname // Use current path
   }?score=${encodeURIComponent(sec)}&mode=${encodeURIComponent(currentMode)}`;
   const shareMessage = `Try to beat my score of ${sec}s in the ${currentMode}s mode! ${shareUrl}`;
-  const link = document.getElementById("share-link");
-  link.value = shareMessage;
-  document.getElementById("share-link-container").style.display = "block";
+  const linkInput = document.getElementById("share-link");
+  linkInput.value = shareMessage;
+  document.getElementById("share-link-container").style.display = "block"; // Show container
 }
 
 function copyShareLink() {
   const linkInput = document.getElementById("share-link");
-  linkInput.select();
-  linkInput.setSelectionRange(0, 99999);
+  linkInput.select(); // Select the text
+  linkInput.setSelectionRange(0, 99999); // For mobile devices
+
+  let message = "Could not copy. Please copy manually.";
+  let success = false;
   try {
-    document.execCommand("copy");
-    alert("Share link copied to clipboard!");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(linkInput.value)
+        .then(() => {
+          alert("Share message copied to clipboard!");
+        })
+        .catch((clipboardErr) => {
+          console.warn("Async clipboard API failed:", clipboardErr);
+          // Fallback attempt only if promise fails
+          if (document.execCommand("copy")) {
+            alert("Share message copied to clipboard!");
+          } else {
+            throw new Error("Fallback copy failed");
+          }
+        });
+    } else if (document.execCommand("copy")) {
+      // Legacy fallback
+      alert("Share message copied to clipboard!");
+    } else {
+      throw new Error("Copy command not supported");
+    }
   } catch (err) {
-    console.error("Failed to copy text: ", err);
-    alert("Failed to copy link. Please copy it manually.");
+    console.error("Copy link failed:", err);
+    alert(message); // Alert failure message
   }
 }
 
 function fetchLeaderboard() {
-  fetch("/leaderboard")
+  fetch("/leaderboard") // GET from the same endpoint
     .then((r) => {
       if (!r.ok) {
-        throw new Error("Failed to fetch leaderboard");
+        throw new Error(`Failed to fetch leaderboard (${r.status})`);
       }
       return r.json();
     })
     .then((data) => {
       const leaderboardDiv = document.getElementById("leaderboard");
-      leaderboardDiv.innerHTML = "";
+      leaderboardDiv.innerHTML = ""; // Clear previous leaderboard
 
+      // Group scores by mode (data is already sorted by deviation overall)
       const groups = data.reduce((acc, score) => {
-        (acc[score.mode] = acc[score.mode] || []).push(score);
+        // Basic validation on received score object
+        if (
+          score &&
+          score.mode &&
+          score.name &&
+          score.score &&
+          score.deviation
+        ) {
+          (acc[score.mode] = acc[score.mode] || []).push(score);
+        } else {
+          console.warn(
+            "Received invalid score object in leaderboard data:",
+            score
+          );
+        }
         return acc;
       }, {});
 
-      const modeOrder = ["10", "60", "100"];
+      const modeOrder = ["10", "60", "100"]; // Desired display order
 
+      let hasScores = false; // Track if any scores are displayed
       modeOrder.forEach((mode) => {
         if (groups[mode] && groups[mode].length > 0) {
+          hasScores = true;
           const modeHeader = document.createElement("h3");
           modeHeader.textContent = `${mode}s Mode High Scores`;
           leaderboardDiv.appendChild(modeHeader);
@@ -234,6 +315,7 @@ function fetchLeaderboard() {
           table.innerHTML = `
               <thead>
                 <tr>
+                  <th>#</th>
                   <th>Player</th>
                   <th>Time (s)</th>
                   <th>Error (%)</th>
@@ -243,15 +325,21 @@ function fetchLeaderboard() {
             `;
 
           const tbody = table.querySelector("tbody");
-          groups[mode].forEach((entry) => {
+          groups[mode].forEach((entry, index) => {
+            // Add index for rank
             const tr = document.createElement("tr");
-            const nameTd = document.createElement("td");
-            nameTd.textContent = entry.name;
-            const scoreTd = document.createElement("td");
-            scoreTd.textContent = entry.score;
-            const deviationTd = document.createElement("td");
-            deviationTd.textContent = entry.deviation;
 
+            // Sanitize output just in case, though backend should handle validation
+            const rankTd = document.createElement("td");
+            rankTd.textContent = index + 1;
+            const nameTd = document.createElement("td");
+            nameTd.textContent = entry.name; // Assume names are safe based on backend regex
+            const scoreTd = document.createElement("td");
+            scoreTd.textContent = parseFloat(entry.score).toFixed(3); // Format score
+            const deviationTd = document.createElement("td");
+            deviationTd.textContent = parseFloat(entry.deviation).toFixed(2); // Format deviation
+
+            tr.appendChild(rankTd);
             tr.appendChild(nameTd);
             tr.appendChild(scoreTd);
             tr.appendChild(deviationTd);
@@ -261,15 +349,24 @@ function fetchLeaderboard() {
         }
       });
 
-      if (leaderboardDiv.innerHTML === "") {
-        leaderboardDiv.textContent = "No scores yet!";
+      // Display message if no scores found for any mode
+      if (!hasScores) {
+        leaderboardDiv.textContent = "No scores yet for any mode!";
+      }
+      // Ensure leaderboard is visible after fetch (if it contained scores)
+      if (hasScores) {
+        leaderboardDiv.style.display = "block";
+      } else {
+        leaderboardDiv.style.display = "none"; // Hide if empty
       }
     })
     .catch((error) => {
       console.error("Error fetching leaderboard:", error);
       const leaderboardDiv = document.getElementById("leaderboard");
-      leaderboardDiv.innerHTML = "<p>Could not load leaderboard data.</p>";
+      leaderboardDiv.innerHTML = `<p style="color: red;">Could not load leaderboard data: ${error.message}</p>`;
+      leaderboardDiv.style.display = "block"; // Show the error message
     });
 }
 
+// Initialize the page when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", initPage);
